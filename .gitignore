@@ -134,3 +134,9 @@ dist
 /playwright/.cache/
 
 *.pdf
+
+downloads/*
+!downloads/.gitkeep
+
+key/*
+!key/.gitkeep
