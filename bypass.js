@@ -2,22 +2,22 @@ const playwright = require('playwright');
 const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const constants = require('./constants');
+const configs = require('./configs');
 
-const sshTunnel = async (username, ip, privateKeyPath) => {
-  const ssh = exec(`ssh -o BatchMode=yes -T -D ${constants.SSH_TUNNEL_PORT} ${username}@${ip} -i ${privateKeyPath}`);
+const sshTunnel = async (username, ip, privateKeyPath, port) => {
+  const ssh = exec(`ssh -o BatchMode=yes -T -D ${port} ${username}@${ip} -i ${privateKeyPath}`);
   return ssh;
 };
 
-const ieeeDownload = async (link, downloadDir) => {
+const ieeeDownload = async (link, downloadDir, port) => {
   let browser;
 
   try {
     console.log('Launching browser');
     browser = await playwright.firefox.launch({
-      headless: false,
+      headless: true,
       proxy: {
-        server: `socks5://localhost:${constants.SSH_TUNNEL_PORT}`,
+        server: `socks5://localhost:${port}`,
       },
     });
   } catch (e) {
@@ -29,7 +29,7 @@ const ieeeDownload = async (link, downloadDir) => {
     const context = await browser.newContext();
     const page = await context.newPage();
     console.log(`Navigating to ${link}`);
-    await page.goto(link, { timeout: constants.TIMEOUT_DURATION });
+    await page.goto(link, { timeout: configs.TIMEOUT_DURATION });
   
     const title = await page.innerText('.document-title');
     console.log(`Document title: ${title}`);
@@ -41,7 +41,7 @@ const ieeeDownload = async (link, downloadDir) => {
       throw new Error('Cannot bypass using IP address');
     }
   
-    const download = await page.waitForEvent('download', { timeout: constants.TIMEOUT_DURATION });
+    const download = await page.waitForEvent('download', { timeout: configs.TIMEOUT_DURATION });
     const tempPath = await download.path();
   
     const outPath = path.join(downloadDir, `${title}.pdf`)
@@ -59,27 +59,28 @@ const ieeeDownload = async (link, downloadDir) => {
   return '';
 };
 
-const main = async (link, downloadDir, username, ip, privateKeyPath) => {
-  console.log('Establishing SSH tunnel')
-  const ssh = await sshTunnel(username, ip, privateKeyPath);
+const bypass = async (link, downloadDir, username, ip, privateKeyPath, port) => {
+  console.log(`Establishing SSH tunnel on port ${port}`)
+  const ssh = await sshTunnel(username, ip, privateKeyPath, port);
   ssh.stderr.on('data', (data) => {
     ssh.kill();
     process.exit(1);
   });
   process.on('exit', () => {
-    console.log('Closing SSH tunnel')
+    console.log(`Closing SSH tunnel on port ${port}`)
     ssh.kill();
   });
   console.log('SSH tunnel established');
 
-  const result = await ieeeDownload(link, downloadDir);
+  const result = await ieeeDownload(link, downloadDir, port);
   if (result === '') {
     process.exit(1);
   }
+  console.log(`FINALOUT ${result}`);
   process.exit(0);
 }
 
-module.exports = main;
-
+params = process.argv.slice(2);
+bypass(...params);
 // main('https://ieeexplore.ieee.org/abstract/document/9966270', '.', 'vli-admin', '100.77.80.36', './nas');
 // main('https://ieeexplore.ieee.org/abstract/document/9747630', '.', 'vli-admin', '100.77.80.36', './nas');
