@@ -26,11 +26,12 @@ class Database {
                 password TEXT
               );
               CREATE TABLE IF NOT EXISTS jobs (
-                job_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER PRIMARY KEY,
                 link TEXT,
                 status INTEGER, -- 0: pending, 1: in progress, 2: success, 3: failed
                 path TEXT,
-                created_at TEXT
+                created_at TEXT,
+                updated_at TEXT
               );
               `,
             (err) => {
@@ -46,8 +47,8 @@ class Database {
 
       const row = await this.get('SELECT COUNT(*) as count FROM users')
       if (row.count === 0) {
-        const hashedPassword = bcrypt.hashSync(configs.PASSWORD, 10);
-        await this.run('INSERT INTO users (username, password) VALUES (?, ?)', [configs.USERNAME, hashedPassword]);
+        const hashedPassword = bcrypt.hashSync(configs.DB_PASSWORD, 10);
+        await this.run('INSERT INTO users (username, password) VALUES (?, ?)', [configs.DB_USERNAME, hashedPassword]);
       }
     } catch (err) {
       throw err;
@@ -95,15 +96,15 @@ class Database {
     return row.status;
   }
 
-  async createJob(link) {
-    await this.run('INSERT INTO jobs (status, link, created_at) VALUES (?, ?, ?)', [0, link, new Date().toISOString()]);
+  async createJob(jobId, link) {
+    await this.run('INSERT INTO jobs (job_id, status, link, created_at, updated_at) VALUES (?, ?, ?, ?, ?)', [jobId, 1, link, new Date().toISOString(), new Date().toISOString()]);
   }
 
   async updateJobStatus(jobId, status, path = null) {
     if (status === jobStatus.SUCCESS) {
-      await this.run('UPDATE jobs SET status = ?, path = ? WHERE job_id = ?', [status, path, jobId]);
+      await this.run('UPDATE jobs SET status = ?, path = ?, updated_at = ? WHERE job_id = ?', [status, path, new Date().toISOString(), jobId]);
     } else {
-      await this.run('UPDATE jobs SET status = ? WHERE job_id = ?', [status, jobId]);
+      await this.run('UPDATE jobs SET status = ?, updated_at = ? WHERE job_id = ?', [status, new Date().toISOString(), jobId]);
     }
   }
 
