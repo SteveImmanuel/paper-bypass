@@ -140,3 +140,5 @@ downloads/*
 
 key/*
 !key/.gitkeep
+
+*.sqlite3
