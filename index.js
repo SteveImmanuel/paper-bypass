@@ -60,23 +60,23 @@ const ieeeDownload = async (link, downloadDir) => {
 };
 
 const main = async (link, downloadDir, username, ip, privateKeyPath) => {
-  // console.log('Establishing SSH tunnel')
-  // const ssh = await sshTunnel(username, ip, privateKeyPath);
-  // ssh.stderr.on('data', (data) => {
-  //   ssh.kill();
-  //   process.exit(1);
-  // });
-  // process.on('exit', () => {
-  //   // console.log('Closing SSH tunnel')
-  //   ssh.kill();
-  // });
-  // console.log('SSH tunnel established');
+  console.log('Establishing SSH tunnel')
+  const ssh = await sshTunnel(username, ip, privateKeyPath);
+  ssh.stderr.on('data', (data) => {
+    ssh.kill();
+    process.exit(1);
+  });
+  process.on('exit', () => {
+    console.log('Closing SSH tunnel')
+    ssh.kill();
+  });
+  console.log('SSH tunnel established');
 
-  await ieeeDownload(link, downloadDir);
-  // try {
-  // } catch (e) {
-  //   console.log('Error occurred, most probably timeout');
-  // }
+  const result = await ieeeDownload(link, downloadDir);
+  if (result === '') {
+    process.exit(1);
+  }
+  process.exit(0);
 }
 
 main('https://ieeexplore.ieee.org/abstract/document/9966270', '.', 'vli-admin', '100.77.80.36', './nas');
