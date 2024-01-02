@@ -108,12 +108,12 @@ class Database {
     }
   }
 
-  async getJobPath(jobId) {
-    const row = await this.get('SELECT path FROM jobs WHERE job_id = ?', [jobId]);
+  async getJobById(jobId) {
+    const row = await this.get('SELECT * FROM jobs WHERE job_id = ?', [jobId]);
     if (!row) {
       return null;
     }
-    return row.path;
+    return row;
   }
 
   async getTotalInProgressJobs() {
