@@ -1,83 +1,89 @@
-const playwright = require('playwright');
 const { exec } = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const constants = require('./constants');
+const express = require('express');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { Database, jobStatus } = require('./db');
+const configs = require('./configs');
+const dbInstance = new Database('./db/db.sqlite3');
 
-const sshTunnel = async (username, ip, privateKeyPath) => {
-  const ssh = exec(`ssh -o BatchMode=yes -T -D ${constants.SSH_TUNNEL_PORT} ${username}@${ip} -i ${privateKeyPath}`);
-  return ssh;
-};
+const app = express();
+app.use(express.json());
 
-const ieeeDownload = async (link, downloadDir) => {
-  let browser;
+app.post('/auth', async (req, res) => {
+  const { username, password } = req.body;
 
-  try {
-    console.log('Launching browser');
-    browser = await playwright.firefox.launch({
-      headless: false,
-      proxy: {
-        server: `socks5://localhost:${constants.SSH_TUNNEL_PORT}`,
-      },
-    });
-  } catch (e) {
-    console.error('Error launching browser');
-    return ''
+  const row = await dbInstance.get('SELECT password FROM users WHERE username = ?', [username]);
+  if (!row || !bcrypt.compareSync(password, row.password)) {
+    return res.status(401).json({ message: 'Invalid username or password' });
   }
 
-  try {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    console.log(`Navigating to ${link}`);
-    await page.goto(link, { timeout: constants.TIMEOUT_DURATION });
-  
-    const title = await page.innerText('.document-title');
-    console.log(`Document title: ${title}`);
-    await page.click('.pdf-btn-container');
-    console.log('Attempting to download PDF');
-  
-    const modalDialog = await page.$('.modal-dialog');
-    if (modalDialog) {
-      throw new Error('Cannot bypass using IP address');
+  const token = jwt.sign({ username }, configs.JWT_SECRET, { expiresIn: '365d' });
+  res.json({ message: 'Success authentication', data: { token } });
+});
+
+const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const parts = authHeader.split(' ');
+
+  if (parts.length !== 2) {
+    return res.status(401).json({ message: 'Token error' });
+  }
+
+  const [scheme, token] = parts;
+
+  jwt.verify(token, configs.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Token invalid' });
     }
-  
-    const download = await page.waitForEvent('download', { timeout: constants.TIMEOUT_DURATION });
-    const tempPath = await download.path();
-  
-    const outPath = path.join(downloadDir, `${title}.pdf`)
-    fs.renameSync(tempPath, outPath)
-  
-    console.log(`File downloaded to ${outPath}`);
-    await browser.close();
-    return outPath;
-  } catch (e) {
-    console.error(e);
-  } finally {
-    await browser.close();
-  }
 
-  return '';
+    req.userId = decoded.id;
+    return next();
+  });
 };
 
-const main = async (link, downloadDir, username, ip, privateKeyPath) => {
-  console.log('Establishing SSH tunnel')
-  const ssh = await sshTunnel(username, ip, privateKeyPath);
-  ssh.stderr.on('data', (data) => {
-    ssh.kill();
-    process.exit(1);
-  });
-  process.on('exit', () => {
-    console.log('Closing SSH tunnel')
-    ssh.kill();
-  });
-  console.log('SSH tunnel established');
-
-  const result = await ieeeDownload(link, downloadDir);
-  if (result === '') {
-    process.exit(1);
+app.post('/bypass', authMiddleware, async (req, res) => {
+  const { link } = req.body;
+  if (!link) {
+    return res.status(400).json({ message: 'Missing link' });
   }
-  process.exit(0);
-}
 
-main('https://ieeexplore.ieee.org/abstract/document/9966270', '.', 'vli-admin', '100.77.80.36', './nas');
-// main('https://ieeexplore.ieee.org/abstract/document/9747630', '.', 'vli-admin', '100.77.80.36', './nas');
+  const sshTunnelPort = Math.floor(Math.random() * 3000) + 6000;
+  const childProcess = exec(`node bypass.js ${link} ${configs.DOWNLOAD_DIR} ${configs.SSH_USERNAME} ${configs.SSH_IP} ${configs.SSH_KEY_PATH} ${sshTunnelPort}`);
+  await dbInstance.createJob(childProcess.pid, 'https://ieeexplore.ieee.org/document/9146878');
+
+  let finalLine = null;
+  childProcess.stdout.on('data', (data) => {
+    const tempLine = data.toString().trim().split('\n').pop();
+    if (tempLine.startsWith('FINALOUT')) {
+      finalLine = tempLine.substring(9); // Get rid of 'FINALOUT '
+    } else {
+      const timestamp = new Date().toISOString();
+      console.log(`[${timestamp}] Child process ${childProcess.pid}: ${tempLine}`);
+    }
+  });
+
+  childProcess.on('exit', (code) => {
+    console.log(`Child process ${childProcess.pid} exited with code ${code}`);
+    if (code === 0) {
+      dbInstance.updateJobStatus(childProcess.pid, jobStatus.SUCCESS, finalLine);
+    } else {
+      dbInstance.updateJobStatus(childProcess.pid, jobStatus.FAILED);
+    }
+  });
+  res.json({ message: 'Success creating job', data: { pid: childProcess.pid } });
+});
+
+app.get('/jobs', authMiddleware, async (req, res) => {
+  // Your bypass function here
+  const jobs = await dbInstance.getAllJobs();
+  res.json({ message: 'Success getting all jobs', data: jobs });
+});
+
+app.listen(configs.PORT, () => {
+  console.log(`Listening on port ${configs.PORT}`);
+});
