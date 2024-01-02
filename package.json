@@ -1,0 +1,21 @@
+{
+  "name": "paper-bypass",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SteveImmanuel/paper-bypass.git"
+  },
+  "author": "SteveImmanuel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SteveImmanuel/paper-bypass/issues"
+  },
+  "homepage": "https://github.com/SteveImmanuel/paper-bypass#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.40.1",
+    "@types/node": "^20.10.6"
+  }
+}
