@@ -68,7 +68,8 @@ app.post('/bypass', authMiddleware, async (req, res) => {
   });
 
   childProcess.on('exit', (code) => {
-    console.log(`Child process ${childProcess.pid} exited with code ${code}`);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] Child process ${childProcess.pid} exited with code ${code}`);
     if (code === 0) {
       dbInstance.updateJobStatus(childProcess.pid, jobStatus.SUCCESS, finalLine);
     } else {
@@ -79,9 +80,26 @@ app.post('/bypass', authMiddleware, async (req, res) => {
 });
 
 app.get('/jobs', authMiddleware, async (req, res) => {
-  // Your bypass function here
   const jobs = await dbInstance.getAllJobs();
   res.json({ message: 'Success getting all jobs', data: jobs });
+});
+
+// app.get('/download/:id', authMiddleware, async (req, res) => {
+app.get('/download/:id', async (req, res) => {
+  const { id } = req.params;
+  const job = await dbInstance.getJobById(id);
+  if (!job) {
+    return res.status(404).json({ message: 'Job not found' });
+  }
+  if (job.status === jobStatus.FAILED) {
+    return res.status(400).json({ message: 'Job failed, cannot be downloaded' });
+  } else if (job.status === jobStatus.IN_PROGRESS) {
+    return res.status(400).json({ message: 'Job still in progress, cannot be downloaded' });
+  } else if (job.status === jobStatus.PENDING) {
+    return res.status(400).json({ message: 'Job still pending, cannot be downloaded' });
+  } else if (job.status === jobStatus.SUCCESS) {
+    return res.download(job.path);
+  }
 });
 
 app.listen(configs.PORT, () => {
