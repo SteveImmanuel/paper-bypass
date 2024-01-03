@@ -145,3 +145,10 @@ key/*
 
 .svelte-kit
 bypassDummy.js
+build
+
+data/downloads/*
+data/key/*
+!data/downloads/.gitkeep
+!data/key/.gitkeep
+*.pem
