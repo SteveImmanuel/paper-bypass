@@ -2,7 +2,7 @@
     import { enhance } from "$app/forms";
 
     export let data;
-    export let form;
+    // export let form;
 </script>
 
 <form method="POST" use:enhance class="form-container">
