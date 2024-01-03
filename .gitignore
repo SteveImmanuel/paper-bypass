@@ -144,3 +144,4 @@ key/*
 *.sqlite3
 
 .svelte-kit
+bypassDummy.js

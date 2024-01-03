@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as configs from '$lib/configs' ;
 import { redirect } from '@sveltejs/kit';
+import { goto } from '$app/navigation';
 
 export const actions = {
   default: async ({ cookies, request }) => {
@@ -18,7 +19,6 @@ export const actions = {
 
     const token = jwt.sign({ username }, configs.JWT_SECRET, { expiresIn: '3h' });
     cookies.set('token', token, { path: '/', maxAge: 60 * 60 * 3 });
-    console.log(token);
     return redirect(302, '/');
   }
 };
