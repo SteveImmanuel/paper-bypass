@@ -1,13 +1,14 @@
-import { dbInstance } from '$lib/database';
+import { Database } from '$lib/database';
 import { fail } from '@sveltejs/kit';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as configs from '$lib/configs' ;
 import { redirect } from '@sveltejs/kit';
-import { goto } from '$app/navigation';
+
 
 export const actions = {
   default: async ({ cookies, request }) => {
+    const dbInstance = new Database(configs.DB_PATH);
     const data = await request.formData();
     const username = data.get('username');
     const password = data.get('password');

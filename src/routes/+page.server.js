@@ -1,20 +1,24 @@
-import { dbInstance, jobStatus } from '$lib/database';
+import { Database, jobStatus } from '$lib/database';
 import { exec } from 'child_process';
 import * as configs from '$lib/configs';
 
+
 export async function load() {
+    const dbInstance = new Database(configs.DB_PATH);
     const jobs = await dbInstance.getAllJobs();
     return { jobs, jobStatus }
 }
 
 export const actions = {
     default: async ({ request }) => {
+        const dbInstance = new Database(configs.DB_PATH);
         const data = await request.formData();
         const link = data.get('link');
 
 
         const sshTunnelPort = Math.floor(Math.random() * 3000) + 6000;
         const childProcess = exec(`node bypass.js ${link} ${configs.DOWNLOAD_DIR} ${configs.SSH_USERNAME} ${configs.SSH_IP} ${configs.SSH_KEY_PATH} ${sshTunnelPort} ${configs.TIMEOUT_DURATION}`);
+        console.log(`node bypass.js ${link} ${configs.DOWNLOAD_DIR} ${configs.SSH_USERNAME} ${configs.SSH_IP} ${configs.SSH_KEY_PATH} ${sshTunnelPort} ${configs.TIMEOUT_DURATION}`);
         await dbInstance.createJob(childProcess.pid, link);
 
         let finalLine = null;
