@@ -1,6 +1,7 @@
-const sqlite3 = require('sqlite3').verbose();
-const bcrypt = require('bcrypt');
-const configs = require('../configs');
+// @ts-nocheck
+import sqlite3 from 'sqlite3';
+import { hashSync } from 'bcrypt';
+import { DB_PASSWORD, DB_USERNAME } from '$lib/configs';
 
 const jobStatus = {
   PENDING: 0,
@@ -47,8 +48,8 @@ class Database {
 
       const row = await this.get('SELECT COUNT(*) as count FROM users')
       if (row.count === 0) {
-        const hashedPassword = bcrypt.hashSync(configs.DB_PASSWORD, 10);
-        await this.run('INSERT INTO users (username, password) VALUES (?, ?)', [configs.DB_USERNAME, hashedPassword]);
+        const hashedPassword = hashSync(DB_PASSWORD, 10);
+        await this.run('INSERT INTO users (username, password) VALUES (?, ?)', [DB_USERNAME, hashedPassword]);
       }
     } catch (err) {
       throw err;
@@ -141,7 +142,9 @@ class Database {
 //   console.log(rows);
 // })();
 
-module.exports = {
-  Database,
-  jobStatus,
+const dbInstance = new Database('./data/db.sqlite3');
+
+export {
+  dbInstance,
+  jobStatus
 };
