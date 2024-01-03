@@ -142,3 +142,5 @@ key/*
 !key/.gitkeep
 
 *.sqlite3
+
+.svelte-kit
