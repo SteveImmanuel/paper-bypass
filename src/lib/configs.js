@@ -4,6 +4,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const {
+  DB_PATH,
   DB_USERNAME,
   DB_PASSWORD,
   JWT_SECRET,
@@ -16,6 +17,7 @@ const {
 } = process.env;
 
 export {
+  DB_PATH,
   DB_USERNAME,
   DB_PASSWORD,
   JWT_SECRET,

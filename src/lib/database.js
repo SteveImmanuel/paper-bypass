@@ -12,6 +12,11 @@ const jobStatus = {
 
 class Database {
   constructor(dbPath = ':memory:') {
+    if (Database.instance) {
+      return Database.instance;
+    }
+    Database.instance = this;
+
     this.db = new sqlite3.Database(dbPath);
     this.initialize();
   }
@@ -133,18 +138,7 @@ class Database {
   }
 }
 
-// (async () => {
-//   const db = new Database('./db.sqlite3');
-//   // await db.createJob('https://ieeexplore.ieee.org/document/9148848');
-//   // await db.createJob('https://ieeexplore.ieee.org/document/914812');
-//   // await db.createJob('https://ieeexplore.ieee.org/document/914848');
-//   const rows = await db.getAllJobs();
-//   console.log(rows);
-// })();
-
-const dbInstance = new Database('./data/db.sqlite3');
-
 export {
-  dbInstance,
+  Database,
   jobStatus
 };
