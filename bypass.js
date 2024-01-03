@@ -4,7 +4,7 @@ import { exec } from 'child_process';
 import playwright from 'playwright';
 
 const sshTunnel = async (username, ip, privateKeyPath, port) => {
-  const ssh = exec(`ssh -o BatchMode=yes -T -D ${port} ${username}@${ip} -i ${privateKeyPath}`);
+  const ssh = exec(`ssh -o BatchMode=yes -o StrictHostKeyChecking=no -T -D ${port} -4 ${username}@${ip} -i ${privateKeyPath}`);
   return ssh;
 };
 
@@ -21,7 +21,7 @@ const ieeeDownload = async (link, downloadDir, port, timeoutDuration) => {
       },
     });
   } catch (e) {
-    console.error('Error launching browser');
+    console.log('Error launching browser');
     return ''
   }
 
@@ -44,14 +44,15 @@ const ieeeDownload = async (link, downloadDir, port, timeoutDuration) => {
     const download = await page.waitForEvent('download', { timeout: timeoutDuration });
     const tempPath = await download.path();
   
-    const outPath = path.join(downloadDir, `${title}.pdf`)
-    fs.renameSync(tempPath, outPath)
+    const outPath = path.join(downloadDir, `${title}.pdf`);
+    fs.copyFileSync(tempPath, outPath);
+    fs.unlinkSync(tempPath);
   
     console.log(`File downloaded to ${outPath}`);
     await browser.close();
     return outPath;
   } catch (e) {
-    console.error(e);
+    console.log(e);
   } finally {
     await browser.close();
   }
