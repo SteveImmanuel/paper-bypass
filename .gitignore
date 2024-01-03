@@ -142,3 +142,13 @@ key/*
 !key/.gitkeep
 
 *.sqlite3
+
+.svelte-kit
+bypassDummy.js
+build
+
+data/downloads/*
+data/key/*
+!data/downloads/.gitkeep
+!data/key/.gitkeep
+*.pem

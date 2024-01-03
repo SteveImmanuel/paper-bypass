@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - ORIGIN=http://localhost:7777
+    volumes:
+      - ./data:/app/data
+    ports:
+      - 7777:3000
+    command: ["node", "build"]
