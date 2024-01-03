@@ -5,8 +5,8 @@ import { JWT_SECRET } from '$lib/configs';
 
 export async function handle({ event, resolve }) {
     const { headers } = event.request;
-    const cookies = cookie.parse(headers.get('cookie'));
-    const token = cookies.token || '';
+    const cookies = cookie.parse(headers.get('cookie') || '');
+    const token = cookies?.token || '';
     let auth = false;
 
     try {
