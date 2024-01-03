@@ -18,7 +18,6 @@ export async function handle({ event, resolve }) {
         }
     }
     
-    console.log(event.url.pathname);
     if (auth && event.url.pathname.startsWith('/auth')) {
         return redirect(302, '/');
     }

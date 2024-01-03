@@ -123,12 +123,12 @@ class Database {
   }
 
   async getAllJobs() {
-    const rows = await this.all('SELECT * FROM jobs ORDER BY created_at ASC');
+    const rows = await this.all('SELECT * FROM jobs ORDER BY created_at DESC');
     return rows;
   }
 
   async getAllPendingJobs() {
-    const rows = await this.all('SELECT * FROM jobs WHERE status = ? ORDER BY created_at ASC', [jobStatus.PENDING]);
+    const rows = await this.all('SELECT * FROM jobs WHERE status = ? ORDER BY created_at DESC', [jobStatus.PENDING]);
     return rows;
   }
 }
