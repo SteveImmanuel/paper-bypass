@@ -4,9 +4,7 @@ import * as configs from '$lib/configs';
 
 
 export async function load() {
-    const dbInstance = new Database(configs.DB_PATH);
-    const jobs = await dbInstance.getAllJobs();
-    return { jobs, jobStatus }
+    return { jobStatus }
 }
 
 export const actions = {

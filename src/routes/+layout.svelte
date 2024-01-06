@@ -10,7 +10,8 @@
 
 <style>
 .centered {
-    max-width: 50em;
+    max-width: 60em;
+    padding: 0em 2em;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -47,8 +48,6 @@
 }
 
 :global(h1) {
-    margin-top: 2em;
-
     font-size: 2.5em;
     font-weight: 200;
 }
